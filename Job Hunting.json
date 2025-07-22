@@ -1,0 +1,411 @@
+{
+  "name": "Job Hunting",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://jobwebkenya.com/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        340,
+        -220
+      ],
+      "id": "c2240c62-c114-47cf-9e03-e2c8ba44f2f2",
+      "name": "JobWeb Kenya"
+    },
+    {
+      "parameters": {
+        "url": "https://careerpointkenya.co.ke/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        340,
+        0
+      ],
+      "id": "62480c05-5350-445c-86a0-16398469acd9",
+      "name": "Career Point Kenya"
+    },
+    {
+      "parameters": {
+        "url": "https://remoteok.io/remote-marketing-jobs.rss",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        340,
+        240
+      ],
+      "id": "2fcc7a2a-feee-4b63-b40d-732207272360",
+      "name": "Remote OK"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        0
+      ],
+      "id": "65ad8e74-076b-4778-9012-37ca17e4af1f",
+      "name": " Merge All Feeds"
+    },
+    {
+      "parameters": {
+        "jsCode": "const roles = [\n  \"digital marketing manager\",\n  \"search engine optimisation manager\",\n  \"brand manager\",\n  \"account manager\"\n];\n\nreturn items.filter(item => {\n  const title = (item.json.title || \"\").toLowerCase();\n  const description = (item.json.content || item.json.description || \"\").toLowerCase();\n\n  return roles.some(role =>\n    title.includes(role) || description.includes(role)\n  );\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "3bc58858-2b96-4c6f-99a1-627cbedfdf43",
+      "name": " Filter for SEO/Marketing Roles"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9d36d362-9bb8-4a0d-95ec-5a8cf3110a24",
+              "name": "job_title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "0ac3ff71-d251-410c-8fbf-a2fbe3c93e6c",
+              "name": "job_description",
+              "value": "={{$json.content || $json.description}}\n",
+              "type": "string"
+            },
+            {
+              "id": "e15b4672-f6d3-4abf-b6bf-63a9884e93c2",
+              "name": "job_link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "01b57dab-9927-4b95-8b74-a31e05f53fcf",
+              "name": "posted_date",
+              "value": "={{ $json.pubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "321a4ff9-dc86-402e-b66f-d3cfce04ab75",
+              "name": "status",
+              "value": "To Apply",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "cd7f3ddd-cd39-44d0-a8e1-b21b4a7203c3",
+      "name": "Format Job Info "
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=From the following job title or description, extract only the company name. Return just the company name as a plain string.\n\nHere’s the input:\n---\n{{ $json.title || $json.job_description || $json.contentSnippet }}\n---\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1760,
+        0
+      ],
+      "id": "b83e70dc-7e44-487a-bb84-eb401156a921",
+      "name": "Extract Company Name"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "22dfd298-36fd-8047-94d6-d3d3c8d6e1af",
+          "mode": "list",
+          "cachedResultName": "Job Application Tracker",
+          "cachedResultUrl": "https://www.notion.so/22dfd29836fd804794d6d3d3c8d6e1af"
+        },
+        "title": "={{ $('Format Job Info ').item.json.job_title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Link |url",
+              "ignoreIfEmpty": true,
+              "urlValue": "={{ $('Format Job Info ').item.json.job_link }}\n"
+            },
+            {
+              "key": "Posted Date|date",
+              "date": "={{ $('Format Job Info ').item.json.posted_date }}",
+              "timezone": "Africa/Nairobi"
+            },
+            {
+              "key": "Status|status",
+              "statusValue": "To apply"
+            },
+            {
+              "key": "Company Name|rich_text",
+              "textContent": "={{ $json.text }}"
+            },
+            {
+              "key": "Company Name|rich_text",
+              "textContent": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        2300,
+        0
+      ],
+      "id": "7fcec16f-d714-45a3-89f1-d5c985da345a",
+      "name": "Create Notion Job Entry",
+      "credentials": {
+        "notionApi": {
+          "id": "URaV5mijIRGgHYUQ",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        180
+      ],
+      "id": "bca6d79e-fd9f-4a48-ad5b-b93fbada488b",
+      "name": "Google Gemini LLM",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "0qgiYamS4K0Np84g",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Fetch RSS Feeds\n\nCollects job feeds from 3 sources every hour",
+        "height": 640,
+        "width": 860,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -20,
+        -260
+      ],
+      "typeVersion": 1,
+      "id": "59c39fd4-9ff0-43c3-9668-5b769d340093",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Filter + Format\n\nKeeps only relevant roles and sets standard job fields",
+        "height": 640,
+        "width": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        980,
+        -260
+      ],
+      "typeVersion": 1,
+      "id": "d48081ec-3bfa-4eee-bd35-0df2a3003102",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## AI Company Extraction\n\nUses Gemini to intelligently extract the company name",
+        "height": 640,
+        "width": 380,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1680,
+        -220
+      ],
+      "typeVersion": 1,
+      "id": "1f1ccbf9-ed3a-4346-9d46-bfefa0024ec2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Notion Output\n\nCreates structured job entry in client’s Notion database",
+        "height": 620,
+        "width": 280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2220,
+        -220
+      ],
+      "typeVersion": 1,
+      "id": "a5e5b841-afad-4e10-b02c-ade9d0e7bf9f",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "fa746118-09ec-4740-b6d8-b1f196890a85",
+      "name": "Trigger Every Day"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Career Point Kenya": {
+      "main": [
+        [
+          {
+            "node": " Merge All Feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "JobWeb Kenya": {
+      "main": [
+        [
+          {
+            "node": " Merge All Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remote OK": {
+      "main": [
+        [
+          {
+            "node": " Merge All Feeds",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    " Merge All Feeds": {
+      "main": [
+        [
+          {
+            "node": " Filter for SEO/Marketing Roles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " Filter for SEO/Marketing Roles": {
+      "main": [
+        [
+          {
+            "node": "Format Job Info ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Job Info ": {
+      "main": [
+        [
+          {
+            "node": "Extract Company Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Company Name": {
+      "main": [
+        [
+          {
+            "node": "Create Notion Job Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Company Name",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Every Day": {
+      "main": [
+        [
+          {
+            "node": "JobWeb Kenya",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Career Point Kenya",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Remote OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "db439218-be61-4568-b1f2-82e19e5f63bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "25d1c697824da761160bc226343f1d84e64c1fc332b06ec06e785d06a2bab586"
+  },
+  "id": "qpPRauuXqbiGmVNK",
+  "tags": []
+}
