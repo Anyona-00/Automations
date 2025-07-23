@@ -1,0 +1,748 @@
+{
+  "name": "Surfstop Job Posting",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://jobwebkenya.com/feed/?post_type=job_listing",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        -1160,
+        260
+      ],
+      "id": "96fb2e0f-a46e-4779-8be9-68caac3b3907",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sheetData = $items(\"Get Processed Jobs (guids)\"); \nconst existingGuids = sheetData.map(item => item.json.guid);\n\nreturn items.map(item => {\n  const guid = item.json.guid;\n  const alreadyPosted = existingGuids.includes(guid);\n\n  return {\n    json: {\n      ...item.json,\n      alreadyPosted\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        260
+      ],
+      "id": "228d419e-2918-4d65-b830-dd9e6cede1aa",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "67e17d33-e3b4-4660-8a2f-2fe7c74c2456",
+              "leftValue": "={{ $json[\"alreadyPosted\"].toString() }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -340,
+        260
+      ],
+      "id": "bf1c0b48-b65c-4f72-8a35-bdcf6d0c8972",
+      "name": "Is New Job?"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1_X5La2qWHrczvDt1uuNoD2GoLc4XFAn9Q-ORY58Tc6Y",
+          "mode": "list",
+          "cachedResultName": "Surfstop Processed Jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_X5La2qWHrczvDt1uuNoD2GoLc4XFAn9Q-ORY58Tc6Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Processed Jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_X5La2qWHrczvDt1uuNoD2GoLc4XFAn9Q-ORY58Tc6Y/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -880,
+        20
+      ],
+      "id": "5a2d832a-a498-48ad-afce-2914f0109ba5",
+      "name": "Get Processed Jobs (guids)",
+      "alwaysOutputData": false,
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wG0cG3p23z3gKlSp",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=`You are a professional job posting writer. Transform the following job description into a modern, engaging format using the HTML structure provided below.\n\nCRITICAL INSTRUCTIONS:\n1. Extract company name from the content\n2. Create an engaging job title using EXACTLY one of these formats:\n   - \"[COMPANY_NAME] is hiring [JOB_POSITION]\"\n   - \"[JOB_POSITION] role open at [COMPANY_NAME]\"\n   Choose the format that sounds most natural for the specific job.\n3. Clean up all garbled text, repetitive content, and source attributions\n4. Make content original and professional\n5. Output ONLY the complete HTML - NO markdown code blocks, NO backticks, NO labels or extra text\n6. Be flexible - only include sections that have meaningful content\n7.Extract employment type (Full-time, Part-time, Contract, Internship, Remote, etc.) - default to \"Full-time\" if not specified\n8. NEVER wrap your response in \\`\\`\\`html or any code block formatting\n\nHTML STRUCTURE TO FOLLOW:\n<div class=\"job-post-container\">\n  <div class=\"company-spotlight\">\n    <div class=\"company-badge\">\n      <span class=\"company-label\">Company</span>\n    </div>\n    <h2 class=\"company-name\">[COMPANY_NAME]</h2>\n    <div class=\"company-description\">\n      <p>[CLEAN_COMPANY_DESCRIPTION - 2-3 sentences max]</p>\n    </div>\n  </div>\n\n  <div class=\"position-header\">\n    <div class=\"job-title-card\">\n      <h3 class=\"position-title\">[JOB_TITLE]</h3>\n      <div class=\"job-meta\">\n        <span class=\"job-type\"><strong>Employment type: </strong>[EMPLOYMENT_TYPE]</span>\n        <span class=\"location\"><strong>Location: </strong>[SPECIFIC_LOCATION]</span>\n      </div>\n    </div>\n  </div>\n\n  <div class=\"job-content\">\n    <!-- RESPONSIBILITIES SECTION - Only include if responsibilities are found -->\n    <section class=\"responsibilities-section\">\n      <h4 class=\"section-title\">Key Responsibilities</h4>\n      <div class=\"responsibility-list\">\n        <ul>\n          <!-- Add as many <li> items as needed for each responsibility -->\n        </ul>\n      </div>\n    </section>\n\n    <!-- REQUIREMENTS SECTION - Only include if requirements are found -->\n    <section class=\"requirements-section\">\n      <h4 class=\"section-title\">What We're Looking For</h4>\n      <div class=\"requirements-list\">\n        <ul>\n          <!-- Add as many <li> items as needed for each requirement -->\n        </ul>\n      </div>\n    </section>\n\n    <!-- ADDITIONAL INFO SECTION - Only include if there's additional info like benefits, salary, etc. -->\n    <section class=\"additional-info\">\n      <h4 class=\"section-title\">Additional Information</h4>\n      <div class=\"info-content\">\n        <ul>\n          <!-- Add <li> items for benefits, salary info, work arrangements, etc. -->\n        </ul>\n      </div>\n    </section>\n  </div>\n\n  <div class=\"apply-section\">\n    <div class=\"apply-card\">\n      <h4 class=\"apply-title\">Ready to Make an Impact?</h4>\n      <p class=\"apply-text\">Join [COMPANY_NAME] and be part of a team that values innovation and excellence.</p>\n      <div class=\"apply-button\">\n        <p><strong>📧 How to Apply:</strong> Visit the company's official website to submit your application.</p>\n      </div>\n    </div>\n  </div>\n</div>\n\nCONTENT EXTRACTION GUIDELINES:\n- Extract ALL responsibilities you can find (might be 2, might be 10+)\n- Extract ALL requirements/qualifications (might be 2, might be 8+)\n- Extract employment type from keywords like: \"full time\", \"part time\", \"contract\", \"temporary\", \"internship\", \"remote\", \"hybrid\"\nExtract specific location: look for cities, counties, regions (e.g., \"Nairobi\", \"Mombasa\", \"Nakuru\", \"Nairobi County\", \"Coast Region\")\n- Only include \"Additional Information\" section if there are genuine extras like:\n  * Salary/benefits information\n  * Work arrangements (remote, hybrid)\n  * Company perks\n  * Application deadlines\n- If a section has no meaningful content, omit that entire section\n- Replace [COMPANY_NAME] and [JOB_TITLE] with actual extracted values\n- Replace [EMPLOYMENT_TYPE] with extracted employment type or \"Full-time\" if not found\n- Replace [SPECIFIC_LOCATION] with extracted location or \"Kenya\" if not found\n- Remove any references to jobwebkenya.com or source attributions\n\nEXTRACTION RULES:\nEMPLOYMENT TYPE - Look for these indicators:\n- \"Full-time\", \"Full time\", \"Permanent\" → \"Full-time\"\n- \"Part-time\", \"Part time\" → \"Part-time\"  \n- \"Contract\", \"Contractual\", \"Fixed-term\" → \"Contract\"\n- \"Temporary\", \"Temp\" → \"Temporary\"\n- \"Internship\", \"Intern\", \"Graduate program\" → \"Internship\"\n- \"Remote\", \"Work from home\", \"WFH\" → \"Remote\"\n- \"Hybrid\" → \"Hybrid\"\n- If none found → \"Full-time\"\n\nLOCATION - Look for these indicators:\n- Specific cities: \"Nairobi\", \"Mombasa\", \"Kisumu\", \"Nakuru\", \"Eldoret\", etc.\n- Counties: \"Nairobi County\", \"Mombasa County\", \"Kiambu County\", etc.\n- Regions: \"Coast Region\", \"Central Kenya\", \"Western Kenya\", etc.\n- Areas within cities: \"Westlands\", \"CBD\", \"Industrial Area\", etc.\n- If multiple locations mentioned, use the primary one\n- If none found → \"Kenya\"\n\nCRITICAL: Your response must start directly with <div class=\"job-post-container\"> and end with </div>. Do not include any other text, explanations, or formatting.\n\nOriginal Job Description:\n{{ $json[\"content:encoded\"] || $json[\"description\"] }}`",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        300,
+        760
+      ],
+      "id": "3c156028-708f-41eb-87e7-10340d19c9d4",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "title": "={{ $json.title }}",
+        "additionalFields": {
+          "content": "={{ $json.content }}",
+          "slug": "={{ $json.slug }}",
+          "status": "publish",
+          "categories": [
+            215
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        300,
+        1240
+      ],
+      "id": "6d736f38-c0cb-4e0d-9635-5b63dad240d8",
+      "name": "Wordpress",
+      "credentials": {
+        "wordpressApi": {
+          "id": "GYvjSA1yLH2d2WrH",
+          "name": "Wordpress On Media"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the HTML content directly from LLM\nconst htmlContent = $input.first().json.text;\n\n// Get the GUID from the previous node\nconst originalGuid = $('Loop: Prepare drafts').first().json.original_guid || \n                   $('Loop: Prepare drafts').first().json.guid || \n                   $('Loop: Prepare drafts').first().json.id || '';\n\n// Extract title from the HTML (look for position-title class)\nlet title = '';\nconst titleMatch = htmlContent.match(/<h3 class=\"position-title\">([^<]+)<\\/h3>/);\nif (titleMatch) {\n  title = titleMatch[1].trim();\n}\n\n// Extract company name for fallback title\nlet companyName = '';\nconst companyMatch = htmlContent.match(/<h2 class=\"company-name\">([^<]+)<\\/h2>/);\nif (companyMatch) {\n  companyName = companyMatch[1].trim();\n}\n\n// Create fallback title if extraction failed\nif (!title) {\n  title = companyName ? `${companyName} - New Job Opportunity` : \"New Job Opportunity Available\";\n}\n\n// Clean up any remaining jobwebkenya references\nconst cleanedContent = htmlContent\n  .replace(/https?:\\/\\/jobwebkenya\\.com[^\\s)\\\"]+/gi, '')\n  .replace(/\\(Note:.*?\\)/gi, '')\n  .replace(/(Originally posted.*?|Published on.*?JobWeb Kenya)/gi, '')\n  .trim();\n\n// Create slug from title\nfunction createSlug(text) {\n  return text\n    .toLowerCase()\n    .replace(/[^\\w\\s-]/g, '')\n    .replace(/\\s+/g, '-')\n    .replace(/-+/g, '-')\n    .replace(/^-+|-+$/g, '')\n    .substring(0, 50);\n}\n\nconst slug = createSlug(title);\n\nconsole.log(\"Extracted title:\", title);\nconsole.log(\"Generated slug:\", slug);\n\nreturn [\n  {\n    json: {\n      title: title,\n      slug: slug,\n      content: cleanedContent,\n      original_guid: originalGuid,\n      rss_link: $input.first().json.link || '',\n      published_date: $input.first().json.pubDate || $input.first().json.date || ''\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        1000
+      ],
+      "id": "4157954b-2024-46c0-be72-1993d8157dae",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1_X5La2qWHrczvDt1uuNoD2GoLc4XFAn9Q-ORY58Tc6Y",
+          "mode": "list",
+          "cachedResultName": "Surfstop Processed Jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_X5La2qWHrczvDt1uuNoD2GoLc4XFAn9Q-ORY58Tc6Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Processed Jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_X5La2qWHrczvDt1uuNoD2GoLc4XFAn9Q-ORY58Tc6Y/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "guid": "={{ $('Code1').item.json.original_guid }}"
+          },
+          "matchingColumns": [
+            "guid"
+          ],
+          "schema": [
+            {
+              "id": "guid",
+              "displayName": "guid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "date_gmt",
+              "displayName": "date_gmt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "modified",
+              "displayName": "modified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "modified_gmt",
+              "displayName": "modified_gmt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "password",
+              "displayName": "password",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "slug",
+              "displayName": "slug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "excerpt",
+              "displayName": "excerpt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "author",
+              "displayName": "author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "featured_media",
+              "displayName": "featured_media",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "comment_status",
+              "displayName": "comment_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ping_status",
+              "displayName": "ping_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sticky",
+              "displayName": "sticky",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "template",
+              "displayName": "template",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "format",
+              "displayName": "format",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "meta",
+              "displayName": "meta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "categories",
+              "displayName": "categories",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "permalink_template",
+              "displayName": "permalink_template",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "generated_slug",
+              "displayName": "generated_slug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "class_list",
+              "displayName": "class_list",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "acf",
+              "displayName": "acf",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "_links",
+              "displayName": "_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -300,
+        500
+      ],
+      "id": "58a69a8d-961a-4fa0-a442-03d0f438cf2d",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "wG0cG3p23z3gKlSp",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        320,
+        600
+      ],
+      "id": "b493dfb9-369b-4dab-a4c8-dc4a21546319",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "OMPBK5z0bB2oMeJQ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all input data\nconst allData = $input.all();\n\n// Process each item to preserve GUID\nreturn allData.map(item => {\n  const inputData = item.json;\n  \n  // Get the GUID from the current item\n  const parentGuid = inputData.guid || inputData.id;\n  \n  console.log(\"Preserving GUID:\", parentGuid);\n  \n  // Return the item with GUID preserved\n  return {\n    json: {\n      ...inputData,\n      original_guid: parentGuid\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        240
+      ],
+      "id": "5da76e07-0e2b-4e89-bc17-77dee00bc027",
+      "name": "Preserve GUID Through LLM"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1380,
+        260
+      ],
+      "id": "5b431dee-9bf8-4054-b4b3-51bed0a899c5",
+      "name": "Hourly Check"
+    },
+    {
+      "parameters": {
+        "team": "9012970523",
+        "space": "90124003573",
+        "folderless": true,
+        "list": "901210160272",
+        "name": "Check on Job posting Drafts",
+        "additionalFields": {
+          "assignees": [
+            93607150
+          ],
+          "notifyAll": false,
+          "timeEstimate": 1
+        }
+      },
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        740,
+        220
+      ],
+      "id": "68d6fdfa-cc8f-4802-8cc1-5f1a35eaea34",
+      "name": "Alert: Publish Jobs",
+      "credentials": {
+        "clickUpApi": {
+          "id": "tDEge9UDo3FMs6Ol",
+          "name": "ClickUp On Media"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        400,
+        240
+      ],
+      "id": "e6cdddad-db49-42a2-8ab2-ee6d602a80b1",
+      "name": "Loop: Prepare drafts"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Get Processed Jobs (guids)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Is New Job?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Processed Jobs (guids)": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New Job?": {
+      "main": [
+        [
+          {
+            "node": "Preserve GUID Through LLM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Wordpress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wordpress": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Loop: Prepare drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preserve GUID Through LLM": {
+      "main": [
+        [
+          {
+            "node": "Loop: Prepare drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hourly Check": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop: Prepare drafts": {
+      "main": [
+        [
+          {
+            "node": "Alert: Publish Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fe1bfee4-d299-496b-b4f3-bac7f8e22ec6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "846778f5a4838a16b8fb934cb4a722de0a579c40438c65761c66750219cbd7d6"
+  },
+  "id": "m4qLVTdlmZQizTDL",
+  "tags": []
+}
